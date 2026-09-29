@@ -42,7 +42,7 @@ export JAVA_HOME=/path/to/java-25-jdk
 BUILD_JOBS=4 ./scripts/build-linux.sh
 ```
 
-Output: `fabric/build/libs/radiante-fabric-0.3.0-linux.1+26.3.jar`.
+Output: `fabric/build/libs/radiante-fabric-0.3.0-linux.2+26.3.jar`.
 The script builds and installs the Linux native library before packaging the Fabric JAR.
 It enables FSR and NRD, and disables Windows Streamline and XeSS. No proprietary Windows DLLs
 are included. SDK licences and third-party notices remain in the source tree and JAR.
@@ -58,6 +58,9 @@ Use separate working copies for Windows and Linux packaging so staged native res
 - Compile NRD shaders and add a Linux build script.
 - Make the sampler cache weak and device-specific. The original strong cache kept samplers
   alive until after Minecraft destroyed its Vulkan device, causing a crash on exit in testing.
+
+- Stop and join the native diagnostic watchdog before closing the Vulkan device. Its detached
+  thread could otherwise query a destroyed device while other mods finished shutting down.
 
 ## Validation — 28 September 2026
 
@@ -76,6 +79,20 @@ Build system: GCC 16.2.1, glibc 2.44, CMake 4.4.3 and shaderc 2026.3.
 Nighttime emissive-lighting check in the installed Prism instance:
 
 ![Ray-traced sea lantern lighting nearby blocks on Linux](images/linux-prism-night.png)
+
+An adapted local Fabulously Optimized setup also includes Lithium, FerriteCore, ModernFix,
+Mod Menu, Zoomify and other convenience mods. Sodium, Iris and their dependent mods are omitted,
+as are additional culling/immediate-rendering and raster dynamic-lighting mods. This is not an
+unmodified or officially supported Fabulously Optimized pack, and individual mod features have
+not all been validated.
+
+Testing that setup with a -100 mV GPU undervolt produced a graphics-ring timeout after a resource
+reload, followed by a GPU reset and compositor crash. At stock GPU settings, the same build and
+mod set passed the original sequence and a second run with three reloads and world re-entry,
+without GPU faults or native shutdown crashes. A third test streamed real terrain, reloaded
+resources and toggled ray tracing under high GPU load, then exited without a fault. All three
+launch-to-exit runs passed at stock settings. Validate at stock settings first; these results
+do not establish undervolting as the sole possible cause of a hang.
 
 These are short functional tests, **not** long-session stability tests or performance benchmarks.
 First use compiles shaders and can pause for several seconds.

@@ -274,6 +274,7 @@ std::atomic<VkSemaphore> g_watchTimeline{VK_NULL_HANDLE};
 std::atomic<uint64_t> g_watchValue{0};
 std::atomic<int64_t> g_watchTime{0};
 std::atomic<bool> g_watchdogStarted{false};
+std::jthread g_watchdog;
 
 int64_t nowTicks() {
     return std::chrono::steady_clock::now().time_since_epoch().count();
@@ -281,10 +282,11 @@ int64_t nowTicks() {
 
 void startWatchdog(VkDevice device) {
     if (g_watchdogStarted.exchange(true)) return;
-    std::thread([device]() {
+    g_watchdog = std::jthread([device](std::stop_token stop) {
         bool reported = false;
-        while (true) {
+        while (!stop.stop_requested()) {
             std::this_thread::sleep_for(std::chrono::milliseconds(500));
+            if (stop.stop_requested()) break;
             int64_t last = g_watchTime.load();
             if (last == 0) continue;
             double stalledMs = std::chrono::duration<double, std::milli>(
@@ -312,7 +314,7 @@ void startWatchdog(VkDevice device) {
                       << (op != nullptr ? " running for " + std::to_string(opMs) + " ms" : std::string()) << std::endl;
             radiante::out().flush();
         }
-    }).detach();
+    });
 }
 } // namespace
 
@@ -365,6 +367,12 @@ void Framework::waitBackendQueueIdle() {
 }
 
 void Framework::close() {
+    // The watchdog queries Minecraft's device, so it must finish before that device is destroyed.
+    g_watchdog.request_stop();
+    if (g_watchdog.joinable()) g_watchdog.join();
+    g_watchdogStarted.store(false);
+    g_watchTimeline.store(VK_NULL_HANDLE);
+    g_watchTime.store(0);
     if (running_ && pipeline_ != nullptr) { pipeline_->close(); }
     running_ = false;
 }
