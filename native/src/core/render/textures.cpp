@@ -21,22 +21,25 @@ std::ostream &texturesCerr() {
 
 namespace {
 // Samplers are a limited device resource and every texture only needs one of a handful of
-// configurations, so they are shared between textures.
+// configurations, so they are shared between textures. The cache must not keep Vulkan
+// resources alive after Minecraft closes the device.
 std::shared_ptr<vk::Sampler> acquireSharedSampler(const std::shared_ptr<vk::Device> &device,
                                                   VkFilter samplingMode,
                                                   VkSamplerMipmapMode mipmapMode,
                                                   VkSamplerAddressMode addressMode) {
     static std::mutex mutex;
-    static std::map<std::tuple<int, int, int>, std::shared_ptr<vk::Sampler>> cache;
+    static std::map<std::tuple<VkDevice, int, int, int>, std::weak_ptr<vk::Sampler>> cache;
 
-    auto key = std::make_tuple(static_cast<int>(samplingMode), static_cast<int>(mipmapMode),
+    auto key = std::make_tuple(device->vkDevice(), static_cast<int>(samplingMode), static_cast<int>(mipmapMode),
                                static_cast<int>(addressMode));
     std::scoped_lock lock(mutex);
     auto iter = cache.find(key);
-    if (iter != cache.end()) return iter->second;
+    if (iter != cache.end()) {
+        if (auto sampler = iter->second.lock()) return sampler;
+    }
 
     auto sampler = vk::Sampler::create(device, samplingMode, mipmapMode, addressMode);
-    cache.emplace(key, sampler);
+    cache[key] = sampler;
     return sampler;
 }
 } // namespace

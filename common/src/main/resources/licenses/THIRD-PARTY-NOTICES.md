@@ -15,7 +15,9 @@ This software contains source code provided by NVIDIA Corporation.
 | `streamline/sl.reflex.dll`, `streamline/NvLowLatencyVk.dll` | Reflex | NVIDIA | [NVIDIA RTX SDK](NVIDIA-RTX-SDK-LICENSE.txt) |
 | `libxess.dll`, `libxess_dx11.dll`, `libxess_fg.dll` | XeSS | Intel | [Intel XeSS](Intel-XeSS-LICENSE.txt) |
 
-`core.dll` is Radiante's own renderer and is GPL-3.0. It links statically against the
+The Linux build contains `libcore.so` and shaders, without the Windows DLLs listed above.
+
+`core.dll` / `libcore.so` is Radiante's own renderer and is GPL-3.0. It links statically against the
 components below.
 
 ## Statically linked components

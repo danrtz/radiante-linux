@@ -22,6 +22,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 import java.util.Collections;
+import java.util.Locale;
 import java.util.stream.Stream;
 import org.slf4j.Logger;
 
@@ -33,6 +34,7 @@ public final class RadianteClient {
 
     public static final Logger LOGGER = LogUtils.getLogger();
     private static final String NATIVE_RESOURCE_ROOT = "/radiante-native";
+    private static final String NATIVE_LIBRARY = System.mapLibraryName("core");
 
     public static Path radianceDir;
     private static boolean streamlineLoaded;
@@ -102,9 +104,9 @@ public final class RadianteClient {
             return;
         }
 
-        String osName = System.getProperty("os.name").toLowerCase();
-        if (!osName.contains("windows")) {
-            throw new IllegalStateException("Radiante currently supports Windows only (detected " + osName + ")");
+        String osName = System.getProperty("os.name").toLowerCase(Locale.ROOT);
+        if (!osName.contains("windows") && !osName.contains("linux")) {
+            throw new IllegalStateException("Radiante supports Windows and Linux (detected " + osName + ")");
         }
 
         radianceDir = RadiantePlatform.INSTANCE.gameDir().resolve("radiante");
@@ -115,17 +117,18 @@ public final class RadianteClient {
         }
 
         removeStaleNatives();
-        copyOptionalFile("libxess.dll");
-        copyFile("core.dll");
+        copyFile(NATIVE_LIBRARY);
         copyFolder("shaders", radianceDir.resolve("shaders"));
         copyFolder(null, radianceDir.resolve("modules"), "/modules");
-        copyFolder("streamline", radianceDir.resolve("streamline"));
-
-        Path xess = radianceDir.resolve("libxess.dll");
-        if (Files.exists(xess)) {
-            System.load(xess.toAbsolutePath().toString());
+        if (osName.contains("windows")) {
+            copyOptionalFile("libxess.dll");
+            copyFolder("streamline", radianceDir.resolve("streamline"));
+            Path xess = radianceDir.resolve("libxess.dll");
+            if (Files.exists(xess)) {
+                System.load(xess.toAbsolutePath().toString());
+            }
         }
-        System.load(radianceDir.resolve("core.dll").toAbsolutePath().toString());
+        System.load(radianceDir.resolve(NATIVE_LIBRARY).toAbsolutePath().toString());
         nativeLoaded = true;
 
         RendererProxy.initFolderPath(radianceDir.toAbsolutePath().toString());
@@ -216,9 +219,9 @@ public final class RadianteClient {
      * directly: NeoForge serves mod resources from its own file system, which resolves files but not directories.
      */
     private static void copyFolder(String ignored, Path target, String resourceFolder) {
-        URL anchor = RadianteClient.class.getResource(NATIVE_RESOURCE_ROOT + "/core.dll");
+        URL anchor = RadianteClient.class.getResource(NATIVE_RESOURCE_ROOT + "/" + NATIVE_LIBRARY);
         if (anchor == null) {
-            throw new IllegalStateException("Missing bundled native file: core.dll");
+            throw new IllegalStateException("Missing bundled native file: " + NATIVE_LIBRARY);
         }
 
         try {
@@ -240,7 +243,7 @@ public final class RadianteClient {
                     }
                 }
             } else {
-                // core.dll sits in radiante-native, one level below the resource root.
+                // The native library sits in radiante-native, one level below the resource root.
                 Path resourceRoot = Paths.get(uri).getParent().getParent();
                 copyTree(requireFolder(resourceRoot.resolve(resourceFolder.substring(1)), resourceFolder), target);
             }

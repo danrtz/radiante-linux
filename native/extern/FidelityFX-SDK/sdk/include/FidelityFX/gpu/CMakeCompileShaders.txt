@@ -74,6 +74,11 @@ function(compile_shaders_with_depfile
 		set(FFX_GDK_OPTION )
 	endif()
 
+	# Bash also expands braces when invoked as /bin/sh. Keep permutation sets intact.
+	if(UNIX)
+		list(TRANSFORM PERMUTATION_ARGS REPLACE "^(.*)$" "\"\\1\"")
+	endif()
+
 	foreach(PASS_SHADER ${SHADER_FILES})
 		get_filename_component(PASS_SHADER_FILENAME ${PASS_SHADER} NAME_WE)
 		get_filename_component(PASS_SHADER_TARGET ${PASS_SHADER} NAME_WLE)

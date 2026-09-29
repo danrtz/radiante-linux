@@ -1,13 +1,11 @@
 file(GLOB_RECURSE SOURCE_FILES CONFIGURE_DEPENDS "*.cpp")
 
 add_library(core SHARED ${SOURCE_FILES})
-target_link_libraries(core PUBLIC ngx ${JNI_LIBRARIES} VulkanMemoryAllocator volk::volk minizip tinyexpr
+target_link_libraries(core PUBLIC ngx VulkanMemoryAllocator volk::volk minizip tinyexpr
                                    nlohmann_json::nlohmann_json)
 
 if(DEFINED ENV{VULKAN_SDK} AND NOT "$ENV{VULKAN_SDK}" STREQUAL "")
     set(MCVR_VULKAN_SDK "$ENV{VULKAN_SDK}")
-else()
-    message(FATAL_ERROR "VULKAN_SDK environment variable is required")
 endif()
 
 find_path(SHADERC_INCLUDE_DIR shaderc/shaderc.hpp
@@ -15,8 +13,14 @@ find_path(SHADERC_INCLUDE_DIR shaderc/shaderc.hpp
     "${MCVR_VULKAN_SDK}/x86_64/include"
     "${MCVR_VULKAN_SDK}/include"
 )
+if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
+    set(SHADERC_NAMES shaderc_shared)
+    target_link_options(core PRIVATE "LINKER:-z,defs")
+else()
+    set(SHADERC_NAMES shaderc_combined shaderc_shared shaderc)
+endif()
 find_library(SHADERC_LIBRARY
-    NAMES shaderc_combined shaderc_shared shaderc
+    NAMES ${SHADERC_NAMES}
     HINTS
     "${MCVR_VULKAN_SDK}/x86_64/lib"
     "${MCVR_VULKAN_SDK}/lib"

@@ -1,6 +1,19 @@
-# Radiante
+# Radiante for Linux
 
-Path-traced rendering for Minecraft 26.3 (Fabric, NeoForge and Forge), built on Minecraft's own Vulkan backend.
+Experimental Linux port of [Radiante](https://github.com/Gabrieli2806/Radiante-26.3-Fabric),
+Gabrieli2806's path-traced renderer for Minecraft 26.3. This fork adds Linux loading and build fixes;
+the renderer and its features come from the upstream projects.
+
+**Tested on Arch Linux, Hyprland/Wayland and a Radeon RX 7900 XT with RADV.**
+Fabric, hardware ray tracing, FSR upscaling and NRD denoising work in the local smoke tests.
+This is an early port, not a promise of stability on every system.
+
+[Download the Linux prerelease](https://github.com/danrtz/radiante-linux/releases) ·
+[Linux installation, build instructions and test results](docs/LINUX.md)
+
+Use a separate Minecraft **26.3 + Fabric** instance with Fabric API. Select Vulkan, then use
+**F6** for Radiante settings or **F7** to toggle ray tracing. Do not combine it with Sodium or Iris.
+The prebuilt JAR targets current Arch Linux x86_64; other distributions may need a source build.
 
 [GitHub](https://github.com/Gabrieli2806/Radiante-26.3-Fabric) · [Modrinth](https://modrinth.com/project/radiante) · [CurseForge](https://www.curseforge.com/minecraft/mc-mods/radiante) · [Discord](https://discord.gg/DhBbAzugZ9) · [Full documentation](docs/en/README.md)
 
@@ -22,7 +35,8 @@ shares the device Minecraft already created, so the ray tracer and the vanilla G
 - LabPBR support (`_s`/`_n` maps) for blocks, atlases and entities/held items, with per-entity emission
   (glow item frames, end crystals, self-lit mobs). A custom resource pack with PBR maps (or a Bedrock
   `.mcpack`) is recommended to get the most out of these features.
-- Upscaling through DLSS, FSR 3 and XeSS, plus NRD denoising.
+- FSR 3 upscaling and NRD denoising are tested on Linux. Upstream also has DLSS and XeSS;
+  DLSS is untested here, and XeSS is disabled in this Linux build.
 - Motion blur and depth of field, both toggleable.
 - Bedrock `.mcpack` resource pack support (including fog and water), detected directly in the pack list.
 - Experimental [Distant Horizons](https://modrinth.com/mod/distanthorizons) support: its far terrain is path
@@ -32,19 +46,24 @@ shares the device Minecraft already created, so the ray tracer and the vanilla G
 
 ## Requirements
 
-- Windows x64 (only platform supported for now).
+- Linux x86_64 for this fork's Fabric build; see [Linux requirements](docs/LINUX.md).
+- Upstream Windows support is retained in the source but was not retested for this port.
 - A GPU with Vulkan ray tracing support (`VK_KHR_ray_tracing_pipeline` and
   `VK_KHR_acceleration_structure`).
 - Minecraft 26.3 with one of:
   - Fabric Loader 0.19.5+ and Fabric API 0.160.5+26.3,
   - NeoForge 26.3.0.10-beta+,
   - Forge 26.3-66.0.3+.
-- Frame generation and NVIDIA Reflex are Fabric only for now (see [ROADMAP.md](ROADMAP.md)).
+- NVIDIA Streamline frame generation and Reflex are disabled on Linux.
+- NeoForge and Forge have not been validated by this fork.
 - Java 25.
 
 ## Building
 
-The mod bundles a native library (`core.dll`) built from `native/`.
+For Linux, follow [docs/LINUX.md](docs/LINUX.md) and run `scripts/build-linux.sh` with a Java 25 JDK.
+The JAR bundles `libcore.so`, shaders and modules.
+
+The original Windows build instructions follow. Its native library is `core.dll`:
 
 ```sh
 # 1. native renderer (Visual Studio 2026 toolchain, x64)
@@ -134,4 +153,5 @@ Bug reports, shader tweaks and pull requests are welcome.
 ## Licence
 
 GPL-3.0, inherited from the upstream projects. Radiance and MCVR are by LJIONG and Interstellarss; this fork
-keeps their licence and credits.
+keeps their licence and credits. The Minecraft 26.3 Radiante port is by Gabrieli2806;
+the Linux integration in this fork is maintained by danrtz.
